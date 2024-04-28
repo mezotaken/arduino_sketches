@@ -13,7 +13,8 @@ CRGB leds_aux[num_leds_aux];
 const byte led_states[][3] = {{0, 0, 0}, {255, 214, 170}};
 
 // Переменные для протокола передачи
-byte msg_len_counter = 0;
+byte mc = 0;
+bool upd = false;
 byte cur_color[3];
 
 // Параметры для обработки кнопок и реле
@@ -35,8 +36,8 @@ unsigned long led_button_start = 0;
 
 bool lamp_sw = false;
 bool charge_sw = false;
-bool main_led_sw = true;
-bool aux_led_sw = true;
+bool main_led_sw = false;
+bool aux_led_sw = false;
 
 
 // Для быстрой установки одного цвета на всю ленту
@@ -88,21 +89,29 @@ void setup() {
 
   FastLED.setBrightness(255);
 
-  set_strip_color(num_leds_main, leds_main, led_states[true]);
-  set_strip_color(num_leds_aux, leds_aux, led_states[true]);
+  set_strip_color(num_leds_main, leds_main, led_states[false]);
+  set_strip_color(num_leds_aux, leds_aux, led_states[false]);
 }
 
 
 void loop() {
   if (Serial.available() >= 3) {
     Serial.readBytes(cur_color, 3);
-    msg_len_counter++;
+    mc++;
+    upd = true;
   }
-  if (msg_len_counter <= 136) {
-    leds_main[msg_len_counter].setRGB(cur_color[0], cur_color[1], cur_color[2]);
+  if (upd && mc < num_leds_main/2) {
+    upd = false;
+    leds_main[mc*2].setRGB(cur_color[0], cur_color[1], cur_color[2]);
+    if (mc != 0) {
+      leds_main[mc*2 - 1].setRGB((cur_color[0]+leds_main[(mc-1)*2].raw[0])/2, (cur_color[1]+leds_main[(mc-1)*2].raw[1])/2, (cur_color[2]+leds_main[(mc-1)*2].raw[2])/2);
+    }
+    if (mc == num_leds_main/2 - 1) {
+      leds_main[mc*2 + 1].setRGB((cur_color[0]+leds_main[0].raw[0])/2, (cur_color[1]+leds_main[0].raw[1])/2, (cur_color[2]+leds_main[0].raw[2])/2);
+    }
   }
-  if (msg_len_counter == 136) {
-    msg_len_counter = 0;
+  if (mc == num_leds_main/2 - 1) {
+    mc = -1;
     FastLED.show();
   }
 
