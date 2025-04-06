@@ -2,11 +2,11 @@
 #define HOLD_TIME 1500
 
 // Параметры для главного и вспомогательного мониторов
-const byte num_leds_main = 136;
+const byte num_leds_main = 124;
 const byte pin_main = 12;
 CRGB leds_main[num_leds_main];
 
-const byte num_leds_aux = 114;
+const byte num_leds_aux = 102;
 const byte pin_aux = 9;
 CRGB leds_aux[num_leds_aux];
 

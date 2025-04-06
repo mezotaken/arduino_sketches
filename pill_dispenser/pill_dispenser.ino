@@ -31,7 +31,7 @@ unsigned long last_request = 0;
 TimePoint cur_time;
 
 WiFiUDP ntp_udp;
-NTPClient time_client(ntp_udp, "pool.ntp.org", utc_offset);
+NTPClient time_client(ntp_udp, "192.168.1.1", utc_offset);
 
 // LED
 const byte strip_pin = D2;
@@ -49,8 +49,8 @@ const int button_threshold = 800;
 const byte servo_pins[n] = {D6, D7, D4, D5};
 Servo servos[n];
 
-const byte closed[n] = {5, 0, 5, 5};
-const byte opened[n] = {110, 105, 110, 100};
+const byte closed[n] = {5, 0, 8, 5};
+const byte opened[n] = {110, 105, 100, 100};
 
 // Buzzer
 const byte buzzer_pin = D3;
@@ -78,8 +78,8 @@ void get_time(NTPClient time_client) {
 void set_strip_color(const byte *color) {
   for (byte i = 0; i < n; i++) {
     strip[i].setRGB(color[0], color[1], color[2]);
+    FastLED.show();
   }
-  FastLED.show();
 }
 
 //-------------------Button functions----------------------//
@@ -93,7 +93,7 @@ bool is_button_pressed() {
 }
 
 //-------------------Servos functions----------------------//
-void servo_slow_set(Servo s, byte cur_angle, byte new_angle, byte delay_ms = 15) {
+void servo_slow_set(Servo s, byte cur_angle, byte new_angle, byte delay_ms = 10) {
   if (new_angle > cur_angle) {
     for (int i = cur_angle; i <= new_angle; i++) {
       s.write(i);
@@ -111,7 +111,7 @@ void servo_slow_set(Servo s, byte cur_angle, byte new_angle, byte delay_ms = 15)
 
 byte find_closest_index(TimePoint cur_time) {
   byte i = 0;
-  while (tge(cur_time, schedule[i]))
+  while (i < n && tge(cur_time, schedule[i]))
     i++;
   return i%n;
 }
@@ -119,13 +119,14 @@ byte find_closest_index(TimePoint cur_time) {
 
 void alarm() {
   unsigned long alarm_start = millis();
-  const unsigned long alarm_length = 1000*60*30;
+  const unsigned long alarm_length = 1000*60*60;
   const unsigned long active_time = 3000;
   const unsigned long pause_time = 1000;
   unsigned long last_alarm_event = alarm_start;
   bool alarm_active = false;
-
-  while (!is_button_pressed() || millis() - alarm_start > alarm_length) {
+  while (!is_button_pressed() && millis() - alarm_start < alarm_length) {
+    delay(100);
+    yield();
     if (alarm_active && millis() - last_alarm_event > active_time) {
       alarm_active = false;
       last_alarm_event = millis();
@@ -138,7 +139,6 @@ void alarm() {
       set_strip_color(led_states[true]);
       tone(buzzer_pin, 400, active_time);
     }
-    yield();
   }
   set_strip_color(led_states[false]);
   noTone(buzzer_pin);
@@ -172,7 +172,8 @@ void setup() {
 
 void loop() {
   get_time(time_client);
-  Serial.printf("%d:%d %d\n\n", cur_time.hour, cur_time.minute, ai);
+  delay(100);
+  yield();
   if (teq(cur_time, schedule[ai])) {
     servo_slow_set(servos[ai], closed[ai], opened[ai]);
 
