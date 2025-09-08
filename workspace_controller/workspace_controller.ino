@@ -78,6 +78,7 @@ byte process_button(byte pin, bool *prev_st, unsigned long *start, bool *hold_tr
 void setup() {
   Serial.begin(115200); 
   Serial.setTimeout(1); 
+  Serial.write(100);
   pinMode(pin_main, OUTPUT);
   FastLED.addLeds<WS2812, pin_main, GRB>(leds_main, num_leds_main).setCorrection(TypicalLEDStrip);
   pinMode(pin_aux, OUTPUT);
